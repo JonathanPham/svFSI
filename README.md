@@ -57,7 +57,7 @@ MPI run can be initiated through
 
 ## Features
 
-`svFSI` provides the capability to model a variety of physics, such as heat transfer, convection, fluid, structure and electrophysiology. It also provides options for each physics to cater to the users diverse needs.
+`svFSI` provides the capability to model a variety of physics, such as heat transfer, convection, fluid, structure and electrophysiology. It also provides options for each physics to cater to the users' diverse needs.
 
 1. Available isochoric constitutive models for the structure equation
    | *Abbreviation* |   *Full name*                    |
@@ -95,6 +95,8 @@ MPI run can be initiated through
 ## Additional Resource
 More details can be found here: https://simvascular.github.io/docssvFSI.html
 
+## License
+`svFSI` is published under BSD 3-Clause License. Details are included in each source code file.
 
 ## Citation
 In preparation.
