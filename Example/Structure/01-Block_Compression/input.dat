@@ -1,0 +1,122 @@
+#----------------------------------------------------------------
+# General simulation parameters
+Number of spatial dimensions: 3
+Number of time steps: 100
+Time step size: 1e-2
+Continue previous simulation: 0
+Overwrite restart file: 1
+Increment in saving restart files: 100
+Save results in folder: result_vms_P2   #_fully_incomp_N004
+Save results to VTK format: t
+Name prefix of saved VTK files: result
+Increment in saving VTK files: 1
+
+Start saving after time step: 1
+Spectral radius of infinite time step: 0.20
+Searched file name to trigger stop: STOP_SIM
+Verbose: 1
+Warning: 0
+Debug: 0
+
+#----------------------------------------------------------------
+# Mesh data
+Add mesh: msh {
+   Mesh file path:    ./mesh/P2/N004/mesh-complete.mesh.vtu
+   Add face: YZ_X0 {
+      Face file path: ./mesh/P2/N004/mesh-surfaces/X0.vtp
+   }
+   Add face: YZ_X1 {
+      Face file path: ./mesh/P2/N004/mesh-surfaces/X1.vtp
+   }
+   Add face: XZ_Y0 {
+      Face file path: ./mesh/P2/N004/mesh-surfaces/Y0.vtp
+   }
+   Add face: XZ_Y1 {
+      Face file path: ./mesh/P2/N004/mesh-surfaces/Y1.vtp
+   }
+   Add face: XY_Z0 {
+      Face file path: ./mesh/P2/N004/mesh-surfaces/Z0.vtp
+   }
+   Add face: XY_Z1 {
+      Face file path: ./mesh/P2/N004/mesh-surfaces/Z1.vtp
+   }
+   Add face: patch {
+      Face file path: ./mesh/P2/N004/mesh-surfaces/Z1_patch.vtp
+   }
+   #Mesh scale factor: 0.001
+}
+
+#----------------------------------------------------------------
+# Equations
+Add equation: ustruct {
+   Coupled: 1
+   Min iterations: 4
+   Max iterations: 200
+   Tolerance: 1e-8
+   Use Taylor-Hood type basis: t
+
+   #Dilational penalty model: ST91
+   #Penalty parameter: 4e11
+
+   Constitutive model: nHK
+   Density: 1e-3
+   Elasticity modulus: 240.56596E6
+   Poisson ratio: 0.5
+   
+   Output: Spatial {
+      Displacement: t
+      Pressure: t
+      Velocity: t
+   }
+
+   LS type: GMRES
+   {
+      Preconditioner:      RCS
+      Tolerance:           1D-6
+      Max iterations:      20000
+      Krylov space dimension: 50
+   }
+
+   Add BC: YZ_X0 {
+      Type: Dir
+      Value: 0.0
+      Effective direction: (1, 0, 0)
+      Impose on state variable integral: t
+   }
+
+   Add BC: XZ_Y0 {
+      Type: Dir
+      Value: 0.0
+      Effective direction: (0, 1, 0)
+      Impose on state variable integral: t
+   }
+
+   Add BC: XY_Z0 {
+      Type: Dir
+      Value: 0.0
+      Effective direction: (0, 0, 1)
+      Impose on state variable integral: t
+   }
+
+   Add BC: XY_Z1 {
+      Type: Dir
+      Value: 0.0
+      Effective direction: (1, 1, 0)
+      Impose on state variable integral: t
+   }
+
+   Add BC: patch {
+      Type: Dir
+      Value: 0.0
+      Effective direction: (1, 1, 0)
+      Impose on state variable integral: t
+   }
+
+   Add BC: patch {
+      Type: Neu
+      Time dependence: Unsteady
+      Temporal values file path: ./load.dat
+      Ramp function: t
+   }
+}
+

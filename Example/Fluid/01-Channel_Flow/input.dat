@@ -1,0 +1,76 @@
+#----------------------------------------------------------------
+# General simulation parameters
+
+Continue previous simulation: 0
+Number of spatial dimensions: 2
+Number of time steps: 100
+Time step size: 0.01
+Spectral radius of infinite time step: 0.50
+Searched file name to trigger stop: STOP_SIM
+
+Save results to VTK format: 1
+Name prefix of saved VTK files: result
+Increment in saving VTK files: 50
+Start saving after time step: 1
+Save results in folder: result_P1
+
+Increment in saving restart files: 50
+Convert BIN to VTK format: 0
+
+Verbose: 1
+Warning: 0
+Debug: 0
+
+#----------------------------------------------------------------
+# Mesh data
+Add mesh: msh {
+   Coordinates file path:  ./mesh/P1/Channel.coordinates
+   Connectivity file path: ./mesh/P1/Channel.connectivity
+
+   Add face: left   { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/X0.ebc }
+   Add face: right  { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/X1.ebc }
+   Add face: bottom { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/Y0.ebc }
+   Add face: top    { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/Y1.ebc }
+}
+
+#----------------------------------------------------------------
+# Equations
+Add equation: fluid {
+   Coupled: 1
+   Min iterations: 1
+   Max iterations: 5
+   Tolerance: 1e-6
+   Use Taylor-Hood type basis: f
+
+   Viscosity: Constant {Value: 1.0}
+   Density: 1.0
+
+   LS type: GMRES
+   {
+      Preconditioner:      svfsi
+      Tolerance:           1D-6
+      Max iterations:      100
+      Krylov space dimension: 50
+   }
+
+   Add BC: left {
+      Type: Dir
+      Time dependence: Steady
+      Profile: Parabolic
+      Impose flux: t
+      Value: -2.0
+   }
+
+   Add BC: top {
+      Type: Dir
+      Time dependence: Steady
+      Value: 0.0
+   }
+
+   Add BC: bottom {
+      Type: Dir
+      Time dependence: Steady
+      Value: 0.0
+   }
+}
+

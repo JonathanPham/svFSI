@@ -1,0 +1,90 @@
+#----------------------------------------------------------------
+# General simulation parameters
+
+Continue previous simulation: 0
+Number of spatial dimensions: 2
+Number of time steps: 10000
+Time step size: 0.005
+Spectral radius of infinite time step: 0.50
+Searched file name to trigger stop: STOP_SIM
+
+Save results to VTK format: 1
+Name prefix of saved VTK files: result
+Increment in saving VTK files: 50
+Start saving after time step: 1
+Save results in folder: result_P1
+
+Increment in saving restart files: 50
+Convert BIN to VTK format: 0
+
+Verbose: 1
+Warning: 0
+Debug: 0
+
+#----------------------------------------------------------------
+# Mesh data
+Add mesh: msh {
+   Coordinates file path:  ./mesh/P1/Fluid.coordinates
+   Connectivity file path: ./mesh/P1/Fluid.connectivity
+
+   Add face: inlet  { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/Fluid_inlet.ebc }
+   Add face: outlet { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/Fluid_outlet.ebc }
+   Add face: wall   { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/Fluid_wall.ebc }
+   Add face: cylinder { Connectivity file (ebc) path: ./mesh/P1/mesh-surfaces/Fluid_cylinder.ebc}
+
+   Mesh scale factor: 0.1
+}
+
+#----------------------------------------------------------------
+# Equations
+Add equation: fluid {
+   Coupled: 1
+   Min iterations: 1
+   Max iterations: 10
+   Tolerance: 1e-6
+   Use Taylor-Hood type basis: f
+
+   Viscosity: Constant {Value: 1D-3}
+   Density: 1.0
+   
+   LS type: BICG
+   {
+      Preconditioner:      svfsi
+      Tolerance:           1D-6
+      Max iterations:      5000
+   }
+
+   Output: Spatial {
+      Velocity: t
+      Pressure: t
+      Vorticity: t
+      WSS: t
+   }
+
+   Output: Boundary_integral {
+      Pressure: t
+      WSS: t
+      Traction: t
+   }
+
+   Add BC: inlet {
+      Type: Dir
+      Time dependence: Steady
+      Profile: Parabolic
+      Value: -0.41
+      Impose flux: t
+   }
+
+   Add BC: wall {
+      Type: Dir
+      Time dependence: Steady
+      Value: 0.0
+   }
+
+   Add BC: cylinder {
+      Type: Dir
+      Time dependence: Steady
+      Value: 0.0
+   }
+}
+

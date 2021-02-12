@@ -32,7 +32,7 @@ Prebuild executable for Linux system is avaiable for download from [SimTK](https
    ```bash
    ccmake ..
    ```
-4. This will automatically search for compilers. Follow instructions if necessary. Type “c” to configure repeatedly until cmake presents the option “g” for generation. Type “g” to create makefiles and exit. Run make in the Build directory:
+4. This will automatically search for compilers. Follow instructions if necessary. Pressure “c” to configure repeatedly until cmake presents the option “g” for generation. Press “g” to create makefiles and exit. Run make in the Build directory:
    ```bash
    make 
    ```
