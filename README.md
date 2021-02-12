@@ -1,11 +1,10 @@
 ### TODO
 
 1. Add building status
-2. Add trilinos build and use instruction
 
 ## Introduction
 
-`svFSI` is a  multi-physics finite element solver designed for computational modeling of whole heart dynamics. As part of the [SimVascular](https://simvascular.github.io) software, `svFSI` is capable of blood flow modeling, large-deformation fluid-structure interaction and electrophysiology modeling.
+`svFSI` is a  multi-physics finite element solver designed for computational modeling of whole heart dynamics. It is capable of blood flow modeling, large-deformation fluid-structure interaction and electrophysiology modeling. `svFSI` can be used as part of the [SimVascular](https://simvascular.github.io) software or can be used a stand-alone solver.
 
 ## Dependence
 
@@ -17,11 +16,10 @@ The following packages are required to build and use `svFSI`.
    - openmpi or mpich
    - blas & lapack
    - trilinos (optional)
-   - hypre (optional)
 
 ## Quick Build
 
-Prebuild executable for Linux system is avaiable for download from [SimTK](https://simtk.org/frs/index.php?group_id=188). Users are recommended to build from the source code to access the most recent features and bug fixes. A short build instruction is provided here for Linux system.
+Prebuild executable for Linux system is available for download from [SimTK](https://simtk.org/frs/index.php?group_id=188). Users are recommended to build from the source code to access the most recent features and bug fixes. A short build instruction is provided here for Linux system.
 
 1. Clone or download the current repository.
 2. Create a Build directory
@@ -32,17 +30,25 @@ Prebuild executable for Linux system is avaiable for download from [SimTK](https
    ```bash
    ccmake ..
    ```
-4. This will automatically search for compilers. Follow instructions if necessary. Pressure “c” to configure repeatedly until cmake presents the option “g” for generation. Press “g” to create makefiles and exit. Run make in the Build directory:
+4. This will automatically search for compilers. Follow instructions if necessary. Press “c” to configure repeatedly until cmake presents the option “g” for generation. Press “g” to create makefiles and exit. Run make in the Build directory:
    ```bash
    make 
    ```
    Successful build will generate a solver binary, called `svFSI` in the following directory `Build/svFSI-build/bin`.
 
+## Build With Trilinos
+
+`svFSI` also supports build with [Trilinos](https://github.com/trilinos/Trilinos). Users can build Trilinos locally following its [online document](https://docs.trilinos.org/files/TrilinosBuildReference.html), and these packages from Trilinos should be installed (`Epetra`, `AztecOO`, `Amesos`, `ML`, `MueLu` and `Ifpack`) to ensure compatibility with `svFSI`. 
+
+To enable Trilinos in `svFSI`, users need to turn on its compiling option located in line 62 of [`./Code/CMake/SimVascularOptions.cmake`](./Code/CMake/SimVascularOptions.cmake). 
+
+In most cases, users can proceed to build `svFSI` following the [Quick Build](#quick-build), and cmake should be able to locate Trilinos automatically through `find_package`. In case the automatic way fails, users can also specify the path to Trilinos through `ccmake -DCMAKE_PREFIX_PATH="<Path to Trilinos>;<Path to other package"`.
+
 ## Run Simulation
 
 `svFSI` requires a plain-text input file to specify simulation parameters. The syntax of the input file can be found [here](https://sites.google.com/site/memt63/tools/MUPFES/mupfes-scripting).
 
-Users are recommended to go through the input files in the `Example` folder and modify them for their needs.
+Users are recommended to go through the input files in the [Example](./Example) folder and modify them for their needs.
 
 MPI run can be initiated through
    ```bash
