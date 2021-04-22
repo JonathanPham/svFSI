@@ -103,15 +103,15 @@
 
       iM   = lFa%iM
       eNoN = lFa%eNoN
-      DO e=1, lFa%nEl
+      DO e=1, lFa%nEl ! JP: i think nEl = number of elements? so here, maybe we are looping over all of the elements in the mesh?
          Ec    = lFa%gE(e)
          cDmn  = DOMAIN(msh(iM), cEq, Ec)
          cPhys = eq(cEq)%dmn(cDmn)%phys
 
          ALLOCATE(ptr(eNoN), N(eNoN), hl(eNoN), yl(tDof,eNoN),
      2      lR(dof,eNoN), lK(dof*dof,eNoN,eNoN))
-         lK = 0._RKIND
-         lR = 0._RKIND
+         lK = 0._RKIND ! JP: i think the the "l" in front of "lK" stands for "local", so maybe here "lK" is the local stiffness matrix (ie the local stiffness matrix for element e?)
+         lR = 0._RKIND ! JP: and maybe here "lR" is the local force vector (ie the local RHS) for element e, where lR should include all contributions from the source term, the neumann BC, etc
          DO a=1, eNoN
             Ac      = lFa%IEN(a,e)
             ptr(a)  = Ac

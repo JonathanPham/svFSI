@@ -80,11 +80,11 @@
 
       dbg = 'Allocating intermediate variables'
       ALLOCATE(Ag(tDof,tnNo), Yg(tDof,tnNo), Dg(tDof,tnNo),
-     2   res(nFacesLS), incL(nFacesLS))
+     2   res(nFacesLS), incL(nFacesLS)) ! JP: from MOD.f, tDof is the " Total number of degrees of freedom per node"; tnNo is the "Total number of nodes"
 
 !--------------------------------------------------------------------
 !     Outer loop for marching in time. When entring this loop, all old
-!     variables are completely set and satisfy BCs.
+!     variables are completely set and satisfy BCs. ! JP 2021_04_14: I think this means that Ao, Yo, and Do are completely "correct" in the sense that we already solved for them and now we are looking for the soltn at the next time step (An, Yn, and Dn)
       IF (cTS .LE. nITS) dt = dt/10._RKIND
       DO
 !     Adjusting the time step size once initialization stage is over
@@ -107,13 +107,13 @@
          END IF
 
 !     Predictor step
-         CALL PICP
+         CALL PICP ! JP 2021_04_14: this line computes eqn 86 and 87 in Bazilevs 2007
 
 !     Apply Dirichlet BCs strongly
          CALL SETBCDIR(An, Yn, Dn)
 
 !     Inner loop for iteration
-         DO
+         DO ! JP 2021_04_02: based on the current form of this DO loop, it looks like MAYBE this DO loop does what the Bazilevs 2007 paper does (their form of the generalized alpha method?? (instead of the Jansen 2000 form of generalized alpha???))
             iEqOld = cEq
 
             IF (cplBC%coupled .AND. cEq.EQ.1) THEN
@@ -122,7 +122,7 @@
             END IF
 
 !        Initiator step (quantities at n+am, n+af)
-            CALL PICI(Ag, Yg, Dg)
+            CALL PICI(Ag, Yg, Dg) ! JP: I think Ag, Yg, Dg gets "filled out" here. These arrays were already allocated earlier in the line "ALLOCATE(Ag(tDof,tnNo), Yg(tDof,tnNo), Dg(tDof,tnNo)", but now in this line, I think the contents of these arrays are being filled out? PICI subroutine from PIC.f  ! JP 2021_04_14: this line computes eqns 89 and 90 in Bazilevs 2007
             IF (ALLOCATED(Rd)) THEN
                Rd = 0._RKIND
                Kd = 0._RKIND
@@ -137,7 +137,8 @@
 
             dbg = "Assembling equation <"//eq(cEq)%sym//">"
             DO iM=1, nMsh
-               CALL GLOBALEQASSEM(msh(iM), Ag, Yg, Dg)
+               CALL GLOBALEQASSEM(msh(iM), Ag, Yg, Dg) ! JP 2021_04_02: so msh is defined in MOD.f (in the line "TYPE(mshType), ALLOCATABLE :: msh(:)" under the section "DERIVED TYPE VARIABLES"), but where does msh actually get "allocated" (or "allocate"), meaning where is msh(iM) set or computed?
+               ! JP 2021_04_02: I think msh is set / computed in the function CALCMESHPROPS in the line "CALL CALCMESHPROPS(nMsh, msh)", where the function CALCMESHPROPS is defined in READMSH.f
                dbg = "Mesh "//iM//" is assembled"
             END DO
 
@@ -182,16 +183,16 @@
             DO iBc=1, eq(cEq)%nBc
                i = eq(cEq)%bc(iBc)%lsPtr
                IF (i .NE. 0) THEN
-                  res(i) = eq(cEq)%gam*dt*eq(cEq)%bc(iBc)%r
+                  res(i) = eq(cEq)%gam*dt*eq(cEq)%bc(iBc)%r ! JP 2021_04_14: why are we updating "res" here? actually, i am not sure what res is. is it the residual? I thought "R" was the residual, but maybe "res" is the residual??
                   incL(i) = 1
                END IF
             END DO
 
             dbg = "Solving equation <"//eq(cEq)%sym//">"
-            CALL LSSOLVE(eq(cEq), incL, res)
+            CALL LSSOLVE(eq(cEq), incL, res) ! JP 2021_04_14: I THINK maybe the linear system is being solved in this line? where the linear system is "K*delta = -R", where K represents the tangent matrix and R represents the residual and delta represents the update/correction in the Newton solver in gen alpha (similar to eqn 92 and 93 in Bazilevs 2007)
 
 !        Solution is obtained, now updating (Corrector)
-            CALL PICC
+            CALL PICC ! JP 2021_04_14: this line computes eqn 94 and 95 in Bazilevs 2007
 
 !        Checking for exceptions
             CALL EXCEPTIONS
@@ -269,7 +270,7 @@
 !     Solution is stored here before replacing it at next time step
          Ao = An
          Yo = Yn
-         IF (dFlag) Do = Dn
+         IF (dFlag) Do = Dn ! JP 2021_04_14: as mentioned in PIC.f, I think "dFlag = .TRUE." maybe means that the PDE of interest has a 2nd order derivative in time, such as the eqns for elastodynamics. As such, in this line, if dFlag = .FALSE., then the problem is only first-order in time (e.g. the fluid or heat eqns) and thus we dont need to update Do with Dn
          cplBC%xo = cplBC%xn
       END DO
 !     End of outer loop

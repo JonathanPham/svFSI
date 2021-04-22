@@ -100,6 +100,7 @@
 !     fluid-structure-interaction, mesh motion, Shell mechanics,
 !     Coupled-Momentum-Method, Cardiac Electro-Physiology,
 !     Nonlinear structure (v-p), Stokes equations
+! JP 2021_04_22: I think "nonlinear structure (pure d)" means using a Displacement formulation, whereas I think "Nonlinear structure (v-p)" means using a Velocity-Pressure formulation
       INTEGER(KIND=IKIND), PARAMETER :: phys_NA = 200, phys_fluid = 201,
      2   phys_struct = 202, phys_heatS = 203, phys_lElas = 204,
      3   phys_heatF = 205, phys_FSI = 206, phys_mesh = 207,

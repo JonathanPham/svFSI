@@ -133,8 +133,9 @@
          eq(iEq)%pNorm = HUGE(eq(iEq)%pNorm)
          eq(iEq)%af    = 1._RKIND/(1._RKIND + eq(iEq)%roInf)
          eq(iEq)%beta  = 0.25_RKIND*(1._RKIND + eq(iEq)%am -
-     2      eq(iEq)%af)**2._RKIND
-         eq(iEq)%gam   = 0.5_RKIND + eq(iEq)%am - eq(iEq)%af
+     2      eq(iEq)%af)**2._RKIND ! JP: does not match
+         eq(iEq)%gam   = 0.5_RKIND + eq(iEq)%am - eq(iEq)%af ! JP: matches eqn 17 in Jansen 2000 (generalized alpha for NS) parameter, but does not match eqn 17 in the Chung 1993 paper (original generalized alpha paper);
+                    ! question: why do the Chung 1993 and Jansen 2000 papers have different definitions of gamma?
          eq(iEq)%s     = tDof + 1
          eq(iEq)%e     = tDof + eq(iEq)%dof
          tDof          = eq(iEq)%e

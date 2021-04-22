@@ -36,7 +36,7 @@
 !
 !--------------------------------------------------------------------
 
-      SUBROUTINE SETBCDIR(lA, lY, lD)
+      SUBROUTINE SETBCDIR(lA, lY, lD)  ! JP 2021_04_08: weiguang said that this functions sets the dirichlet BCs
       USE COMMOD
       IMPLICIT NONE
       REAL(KIND=RKIND), INTENT(INOUT) :: lA(tDof, tnNo), lY(tDof, tnNo),
@@ -228,7 +228,7 @@
       END SUBROUTINE SETBCDIRL
 !####################################################################
 !     Here for the outlets
-      SUBROUTINE SETBCNEU(Yg, Dg)
+      SUBROUTINE SETBCNEU(Yg, Dg) ! JP 2021_04_08: weiguang said that this functions sets the neumann BCs
       USE COMMOD
       IMPLICIT NONE
       REAL(KIND=RKIND), INTENT(IN) :: Yg(tDof,tnNo), Dg(tDof,tnNo)

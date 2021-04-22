@@ -49,7 +49,8 @@
 !--------------------------------------------------------------------
 !     Here comes subTypes definitions later used in other derived types
 !     Function spaces (basis) type
-      TYPE fsType
+      TYPE fsType ! JP: note that usually when we declare variables, we use the "::" marker, so technically, we could write "TYPE :: fsType" here. However, this is not required. This "::" is only required when we have some kind of modifiers like "ALLOCATABLE", etc.
+                ! References: 1) https://web.stanford.edu/class/me200c/tutorial_77/05_variables.html 2) https://stackoverflow.com/questions/22154144/is-there-a-difference-when-declaring-a-variable-with-a-double-colon
 !        Whether the basis function is linear
          LOGICAL lShpF
 !        Element type
@@ -543,7 +544,7 @@
 !        Control points weights (NURBS)
          REAL(KIND=RKIND), ALLOCATABLE :: nW(:)
 !        Gauss weights
-         REAL(KIND=RKIND), ALLOCATABLE :: w(:)
+         REAL(KIND=RKIND), ALLOCATABLE :: w(:) ! JP 2021_04_14: I think the shape of "w" is (number of Gauss points, 1)
 !        Gauss integration points in parametric space
          REAL(KIND=RKIND), ALLOCATABLE :: xi(:,:)
 !        Bounds on parameteric coordinates
@@ -551,7 +552,7 @@
 !        Position coordinates
          REAL(KIND=RKIND), ALLOCATABLE :: x(:,:)
 !        Parent shape function
-         REAL(KIND=RKIND), ALLOCATABLE :: N(:,:)
+         REAL(KIND=RKIND), ALLOCATABLE :: N(:,:) ! JP 2021_04_14: I think the shape of "N" is (number of nodes per element = n_en, number of Gauss points)
 !        Shape function bounds
          REAL(KIND=RKIND), ALLOCATABLE :: Nb(:,:)
 !        Normal vector to each nodal point (for Shells)
@@ -589,10 +590,10 @@
          LOGICAL useTLS
 !        Use C++ Trilinos framework for assembly and for linear solvers
          LOGICAL assmTLS
-!        Degrees of freedom
+!        Degrees of freedom ! JP: what this mean actually? is this the degree of freedom number / ID? or is the number of degrees of freedom?? or what??
          INTEGER(KIND=IKIND) :: dof = 0
 !        Pointer to end of unknown Yo(:,s:e)
-         INTEGER(KIND=IKIND) e
+         INTEGER(KIND=IKIND) e ! JP: so is 'e' a pointer like a pointer that we learned about in C++ or is it just an normal index number (used in array slicing)? from the looks it, 'e' is defined as an integer here, so I think 'e' is just an index number
 !        Number of performed iterations
          INTEGER(KIND=IKIND) itr
 !        Maximum iteration for this eq.
@@ -616,10 +617,10 @@
 !        Type of equation fluid/heatF/heatS/lElas/FSI
          INTEGER(KIND=IKIND) phys
 !        Pointer to start of unknown Yo(:,s:e)
-         INTEGER(KIND=IKIND) s
-!        \alpha_f
+         INTEGER(KIND=IKIND) s ! JP: so is 's' a pointer like a pointer that we learned about in C++ or is it just an normal index number (used in array slicing)? from the looks it, 's' is defined as an integer here, so I think 's' is just an index number
+!        \alpha_f ! JP: i think this is one of the generalized alpha time integrator parameters
          REAL(KIND=RKIND) af
-!        \alpha_m
+!        \alpha_m ! JP: i think this is one of the generalized alpha time integrator parameters
          REAL(KIND=RKIND) am
 !        \beta
          REAL(KIND=RKIND) beta
@@ -630,8 +631,8 @@
 !        First iteration norm
          REAL(KIND=RKIND) pNorm
 !        \rho_{infinity}
-         REAL(KIND=RKIND) roInf
-!        Accepted relative tolerance
+         REAL(KIND=RKIND) roInf ! JP: roInf is the spectral radius, rho_infinity, used in the generalized alpha method
+!        Accepted relative tolerance; question: where does roInf actually get used? in the Chung 1993 and Jansen 2000 papers, the spectral radius is used to compute alpha_f and alpha_m, but I cant find where this spectral radius is actually used to compute these alpha terms in this entire svFSI code...
          REAL(KIND=RKIND) :: tol
 !        Equation symbol
          CHARACTER(LEN=2) :: sym = "NA"
@@ -796,7 +797,7 @@
 !     Whether there is a requirement to update mesh and Dn-Do variables
       LOGICAL dFlag
 !     Whether mesh is moving
-      LOGICAL mvMsh
+      LOGICAL mvMsh ! JP 2021_04_21: I think this parameter is used only in FSI cases (see READFILES.f with the line "CASE ('FSI')", where this section sets mvMsh to be true (mvMsh has a value of false by default))
 !     Whether to averaged results
       LOGICAL saveAve
 !     Whether to save to VTK files
@@ -841,7 +842,7 @@
       INTEGER(KIND=IKIND) cTS
 !     Starting time step
       INTEGER(KIND=IKIND) startTS
-!     Current equation degrees of freedom
+!     Current equation degrees of freedom ! JP 2021_04_14: what does this mean actually? is 'dof' the index number or is it the number of DoFs for this eqn or is it a vector or something like that??
       INTEGER(KIND=IKIND) dof
 !     Global total number of nodes
       INTEGER(KIND=IKIND) gtnNo
@@ -925,9 +926,9 @@
       REAL(KIND=RKIND), ALLOCATABLE :: Val(:,:)
 !     Position vector
       REAL(KIND=RKIND), ALLOCATABLE :: x(:,:)
-!     Old variables (velocity)
+!     Old variables (velocity) ! JP: what does old variables mean? is this the soltn at the previous time step or the current time step? or what?
       REAL(KIND=RKIND), ALLOCATABLE :: Yo(:,:)
-!     New variables
+!     New variables ! JP: what does new variables mean? is this the soltn at the current time step or the next time step? or what?
       REAL(KIND=RKIND), ALLOCATABLE :: Yn(:,:)
 !     Body force
       REAL(KIND=RKIND), ALLOCATABLE :: Bf(:,:)

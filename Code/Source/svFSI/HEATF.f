@@ -113,7 +113,7 @@
       END SUBROUTINE CONSTRUCT_HEATF
 !####################################################################
 !     This is for solving heat equation in a fluid.
-      PURE SUBROUTINE HEATF3D (eNoN, w, N, Nx, al, yl, ksix, lR, lK)
+      PURE SUBROUTINE HEATF3D (eNoN, w, N, Nx, al, yl, ksix, lR, lK) ! JP 2021_04_21: see my notes in the HEATF2D subroutine to understand what the HEATF3D subroutine does. These two subroutines basically compute the same thing, except one does it for 2d domain problems and the other for 3d.
       USE COMMOD
       USE ALLFUN
       IMPLICIT NONE
@@ -206,6 +206,8 @@
       END SUBROUTINE HEATF3D
 !--------------------------------------------------------------------
 !     This is for solving heat equation in a fluid
+
+! JP 2021_04_08: i think the original author of this advection-diffusion FEM solver (HEATF.f) was mahdi, so look at his paper to understand the weak form and FEM formulation etc. The relevant paper is: "A non-discrete method for computation of residence time in fluid mechanics simulations". Physics of Fluids. 2013. See eqn 5 in this paper for the weak form?
       PURE SUBROUTINE HEATF2D (eNoN, w, N, Nx, al, yl, ksix, lR, lK)
       USE COMMOD
       USE ALLFUN
@@ -233,16 +235,16 @@
       Td = -s
       Tx = 0._RKIND
       DO a=1, eNoN
-         u(1) = u(1) + N(a)*yl(1,a)
-         u(2) = u(2) + N(a)*yl(2,a)
+         u(1) = u(1) + N(a)*yl(1,a) ! JP 2021_04_21: i think this line computes the x-component of the velocity vector
+         u(2) = u(2) + N(a)*yl(2,a) ! JP 2021_04_21: i think this line computes the y-component of the velocity vector
 
-         Td = Td + N(a)*al(i,a)
+         Td = Td + N(a)*al(i,a) ! JP 2021_04_21: shape function multiplied by the time derivative of the degree of freedom
 
-         Tx(1) = Tx(1) + Nx(1,a)*yl(i,a)
+         Tx(1) = Tx(1) + Nx(1,a)*yl(i,a) ! JP 2021_04_21: spatial derivative of the shape function multiplied by the the degree of freedom
          Tx(2) = Tx(2) + Nx(2,a)*yl(i,a)
       END DO
 
-      IF (mvMsh) THEN
+      IF (mvMsh) THEN ! JP 2021_04_21: according to MOD.f, mvMsh is a boolean that indiciates "Whether mesh is moving"; I think this parameter is used only in FSI cases (see READFILES.f with the line "CASE ('FSI')", where this section sets mvMsh to be true (mvMsh has a value of false by default))
          DO a=1, eNoN
             u(1) = u(1) - N(a)*yl(5,a)
             u(2) = u(2) - N(a)*yl(6,a)
@@ -250,6 +252,7 @@
          END DO
       END IF
 
+      ! JP 2021_04_21: I believe the below kU, kS, and nTx parameters are used to compute the kappa_tilda and tau_M terms
       kU = u(1)*u(1)*ksix(1,1) + u(2)*u(1)*ksix(2,1)
      2   + u(1)*u(2)*ksix(1,2) + u(2)*u(2)*ksix(2,2)
 
@@ -261,25 +264,39 @@
 
       IF (ISZERO(nTx)) nTx = eps
 
-      udTx = u(1)*Tx(1) + u(2)*Tx(2)
-      Tp   = ABS(Td + udTx)
+      udTx = u(1)*Tx(1) + u(2)*Tx(2) ! JP 2021_04_21: I think this line computes everything in term 2 (blue) of my GoodNotes derivation (the advection matrix) (but without the N_{a}^{e} term). This term is the dot product between the velocity vector, u, and the gradient of the -the shape function multiplied by the degree of freedom soltn-, a.k.a. grad(N_{b}^{e} * d_{b}^{e})
+      Tp   = ABS(Td + udTx) ! JP 2021_04_21: Tp is the norm of the residual here
 !      nu   = nu + kDC
-      nu   = nu + 0.5_RKIND*Tp/SQRT(nTx)
-      tauM = ct(4)/SQRT((ct(1)/(dt*dt)) + ct(2)*kU + ct(3)*nu*nu*kS)
-      Tp   = -tauM*(Td + udTx)
+      nu   = nu + 0.5_RKIND*Tp/SQRT(nTx) ! JP 2021_04_19: I think this line refers to eqn 7 of esmaily 2013, where here, Tp stands for the residual, L (from eqn 7).
+      tauM = ct(4)/SQRT((ct(1)/(dt*dt)) + ct(2)*kU + ct(3)*nu*nu*kS) ! JP 2021_04_19: this term mostly matches eqn 6 of esmaily 2013
+      Tp   = -tauM*(Td + udTx) ! JP 2021_04_19: I think this line represents the negative of tau_m multiplied by the residual, L ("Td + udTx"), where this entire term is eqn in the last integral term of eqn 5 of Mahdi's residence time paper (esmaily 2013). However, note that the residual, as represented by "Td + udTx", is missing the diffusion term tho (it only accounts for 1) the multiplication of the shape function by the acceleration term (the time derivative of the "d" degree of freedom) and 2) the convection term). So note that this "Tp" term, which is again missing the diffusion term is used to compute the residual that is solved by gen alpha (which is different from the PDE residual); so my question is: why are we missing the diffusion term here in the PDE residual, "Tp". Dont we need the diffusion term term in Tp to compute the correct gen alpha residual? Or maybe it is possible that we are using equal-order velocity and pressure interpolation for the FEM of the Navier-Stokes eqn (where I believe we use first-order interpolation (shape functions) for both velocity and pressure); in this case, if we are indeed using first-order shape functions, then the diffusion term is zero because the diffusion term is a 2nd derivative and the 2nd derivative of a first-order (linear) shape function is zero. In Mahdi's residence time paper, he does say that he is using "equal-order velocity and pressure interpolation"
 
       DO a=1, eNoN
-         udNx(a) = u(1)*Nx(1,a) + u(2)*Nx(2,a)
+         udNx(a) = u(1)*Nx(1,a) + u(2)*Nx(2,a) ! JP 2021: "udNx" is = the dot product between the velocity vector, u, and the grad(N_{a}^{e})
       END DO
 
       DO a=1, eNoN
          lR(1,a) = lR(1,a) + w*(N(a)*(Td + udTx)
-     2      + (Nx(1,a)*Tx(1) + Nx(2,a)*Tx(2))*nu - udNx(a)*Tp)
+     2      + (Nx(1,a)*Tx(1) + Nx(2,a)*Tx(2))*nu - udNx(a)*Tp) ! JP 2021_04_19: based on the above comment for Tp, I think udNx(a) represents the grad(q)*u term in eqn 5 of esmaily 2013
+
+                    ! JP 2021_04_21: The term "N(a)*(Td + udTx)" computes term 1 and term 6 and term 2 in my GoodNotes derivation (in blue) (basically the mass matrix and source term contributions, and the advection martix contribution), where the "Td" term includes the contributions from the mass matrix and source term and the "udTx" term includes the contribution from the advection matrix
+
+                    ! JP 2021_04_21: the "(Nx(1,a)*Tx(1) + Nx(2,a)*Tx(2))*nu" term represents the stiffness matrix (term 3 (blue) in my GoodNotes), where the "Tx" is = N_{b}^{e} * d_{b]^{e}, summed over all b's from 1 to eNoN (where eNoN = n_{en} I think)
+
+                    ! JP 2021_04_21: "- udNx(a)*Tp" represents the SUPG stabilization integral term, where "Tp" is = - tau_m * L (where L is just the residual, not the norm of the residual) and "udNx" is = the dot product between the velocity vector, u, and the grad(N_{a}^{e})
 
          DO b=1, eNoN
             lK(1,a,b) = lK(1,a,b) + wl*(nu*(Nx(1,a)*Nx(1,b)
      2         + Nx(2,a)*Nx(2,b))
      3         + (N(a) + tauM*udNx(a))*(N(b)*amd + udNx(b)))
+
+                    ! JP 2021_04_21: In the line, "tauM*udNx(a)", "udNx" is = the dot product between the velocity vector, u, and the grad( N_{a}^{e} ).
+
+                    ! JP 2021_04_21: "(N(a) + tauM*udNx(a))*(N(b)*amd" represents the derivative of the residual (used in gen alpha, not the PDE residual) wrt the acceleration (the time derivative of the "d" degree of freedom) evaluated at n+alpha_m; this corresponds to term 1 and 2 in GoodNotes (in orange writing).
+
+                    ! JP 2021_04_21: "(N(a) + tauM*udNx(a))" * "udNx(b))" represents the term 3 and term 5 (orange) in GoodNotes, except for one small difference which is this code is missing the diffusion term tho. I think this might be related to 1) the idea of using an inconsistent tangent matrix so we dont need to compute a fully correct/exact tangent matrix and we can still hit convergence in our newton solver or 2) the idea of using "equal-order velocity and pressure interpolation" (and first-order linear shape functions for velocity) (see above discussion for more details (locatied where we compute the term, "Tp   = -tauM*(Td + udTx)"))
+
+                    ! JP 2021_04_21: the term, "nu*(Nx(1,a)*Nx(1,b)" + "Nx(2,a)*Nx(2,b))", represents term 4 (orange) in GoodNotes, where this term corresponds to the stiffness matrix contribution to the tangent matrix. Specifically, "Nx(1,a)*Nx(1,b)" + "Nx(2,a)*Nx(2,b)" is the dot product between the grad(N_{a}^{e}) and grad(N_{b}^{e})
          END DO
       END DO
 

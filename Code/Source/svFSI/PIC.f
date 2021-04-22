@@ -32,7 +32,7 @@
 !--------------------------------------------------------------------
 !
 !     This routine contains predictor/initiator/corrector routines, as
-!     part of time integration scheme.
+!     part of time integration scheme. ! JP 2021_04_02: PIC (the file name) stands for Predictor/Initiator/Corrector
 !
 !--------------------------------------------------------------------
 
@@ -81,16 +81,16 @@
          s = eq(iEq)%s
          e = eq(iEq)%e
          coef = (eq(iEq)%gam - 1._RKIND)/eq(iEq)%gam
-         An(s:e,:) = Ao(s:e,:)*coef
+         An(s:e,:) = Ao(s:e,:)*coef ! JP 2021_04_14: I think this the same predictor used for the acceleration in Bazilevs 2007 eqn 87 ("Variational multiscale residual-based turbulence modeling for large eddy simulation of incompressible flows", CMAME)
 
 !        electrophysiology
          IF (eq(iEq)%phys .EQ. phys_CEP) THEN
             CALL CEPINTEG(iEq, e, Do)
          END IF
 
-         Yn(s:e,:) = Yo(s:e,:)
+         Yn(s:e,:) = Yo(s:e,:) ! JP 2021_04_14: I think this the same predictor used for the velocity in Bazilevs 2007 eqn 86 ("Variational multiscale residual-based turbulence modeling for large eddy simulation of incompressible flows", CMAME)
 
-         IF (dFlag) THEN
+         IF (dFlag) THEN ! JP 2021_04_14: I think dFlag is set in INITIALIZE.f. (e.g. on line "dFlag = .TRUE." under the section "CASE (phys_lElas)"), but dFlag has a default value of ".FALSE." heatF and heatS in that file. I think based on this section, "dFlag = .TRUE." means that we want to provide some kind of special initialization for the displacement term (or maybe it means that the PDE of interest has a 2nd order derivative in time, such as the eqns for elastodynamics, so there, we would need some kind of initial guess for the displacement, similar to what is done in the Newmark method (Lecture 7, ME335B)); I also wrote a note about dFlag in MAIN.f (see that note for more details)
             IF (.NOT.sstEq) THEN
 !              struct, lElas, FSI (struct, mesh)
                coef = dt*dt*(0.5_RKIND*eq(iEq)%gam - eq(iEq)%beta)
@@ -119,30 +119,36 @@
       END SUBROUTINE PICP
 !====================================================================
 !     This is the initiator
+! JP 2021_04_02: what the heck is an initiator step?? does the initiator step come before or after the predictor step? from the MAIN.f file, it looks like the order of calls is: PICP, PICI, and then PICC (predictor, initiator and then corrector). So maybe the initiator step computes the initial guess for the Newton solver??
+! JP 2021_04_14: according to MAIN.f, in the location where PICI is called, it says "(quantities at n+am, n+af)", so i think that maybe PICI is computing what initial guesses of what the soltns at the n + alpha_m and n + alpha_f steps are, e.g. eqns 89 and 90 in Bazilevs 2007 ! JP 2021_04_14: after looking through this subroutine in more detail, this is indeed what the code is doing. It is indeed computing the A(n + alpha_m), Y(n + alpha_f)
       SUBROUTINE PICI(Ag, Yg, Dg)
       USE COMMOD
       IMPLICIT NONE
       REAL(KIND=RKIND), INTENT(INOUT) :: Ag(tDof,tnNo), Yg(tDof,tnNo),
-     2   Dg(tDof,tnNo)
+     2   Dg(tDof,tnNo) ! JP: from MOD.f, tDof is the " Total number of degrees of freedom per node"; tnNo is the "Total number of nodes"
 
       INTEGER(KIND=IKIND) s, e, i, a
       REAL(KIND=RKIND) coef(4)
 
-      dof         = eq(cEq)%dof
+      dof         = eq(cEq)%dof ! JP: cEq = "Current equation" in MOD.f; eq is a 1d array of type eqType that stores all data related to equations (MOD.f)
       eq(cEq)%itr = eq(cEq)%itr + 1
 
       DO i=1, nEq
-         s       = eq(i)%s
-         e       = eq(i)%e
-         coef(1) = 1._RKIND - eq(i)%am
+         s       = eq(i)%s ! JP: from MOD.f in the eqType type, i think 's' stands for 'start'
+         e       = eq(i)%e ! JP: from MOD.f in the eqType type, i think 'e' stands for 'end'
+         coef(1) = 1._RKIND - eq(i)%am ! JP: from MOD.f, I think 'am' is one of the generalized alpha time integrator parameters
          coef(2) = eq(i)%am
-         coef(3) = 1._RKIND - eq(i)%af
+         coef(3) = 1._RKIND - eq(i)%af ! JP: from MOD.f, I think 'af' is one of the generalized alpha time integrator parameters
          coef(4) = eq(i)%af
 
-         DO a=1, tnNo
-            Ag(s:e,a) = Ao(s:e,a)*coef(1) + An(s:e,a)*coef(2)
-            Yg(s:e,a) = Yo(s:e,a)*coef(3) + Yn(s:e,a)*coef(4)
-            Dg(s:e,a) = Do(s:e,a)*coef(3) + Dn(s:e,a)*coef(4)
+         ! JP: I think this below for / DO loop is computing some generalized alpha method variables / parameters? however, observe below that there are quantities for acceleration, velocity, and displacement. As such, I think this method is not using the Jansen 2000 generalized alpha method, but i think it is using the original generalized alpha method from the paper, '''J. Chung and G. M. Hulbert, “A time integration algorithm for structural dynamics with improved numerical dissipation: The generalized-α method”, Journal of Applied Mechanics, 60 (1993) 371–75.'''.
+         DO a=1, tnNo ! JP: from MOD.f, tDof is the " Total number of degrees of freedom per node"; tnNo is the "Total number of nodes"
+            Ag(s:e,a) = Ao(s:e,a)*coef(1) + An(s:e,a)*coef(2) ! JP: from MOD.f in the eqType type, I think 'A' stands for acceleration; this eqn comes from eqn 12 in the Chung 1993 paper. ! JP 2021_04_14: this line matches eqn 89 in Bazilevs 2007
+                        ! however, i have an important question: from this eqn, coef(1) is = 1 - alpha_m (am) and coef(2) is = alpha_m (am) and I thought that Ao is the old acceleration and An is the new acceleration, so why is Ao being multipled by 1 - alpha_m here? Shouldnt it be multipled by alpha_m instead, and shouldnt An be multiplied by An (at least, this is how it is done in the Chung 1993 paper).
+                            ! from my notes in INITIALIZE.f, which is where the am and af terms are initialized (from roInf), note that there is a difference between the generalized alpha methods between the Jansen 2000 and Chung 1993 papers. Maybe this difference is why the eqn listed here in PIC.f for Ag and Yg and Dg dont match what is shown in the Chung 1993 paper. So my question is: which method (Chung or Jansen) is correct? Maybe see Ju and Ingrid's paper on generalized alpha for idea of which is the correct version?
+                            ! JP 2021_04_02: i checked and yes, the Chung 1993 and Jansen 2000 paper have different defitions of alpha, so thats why their definitions of alpha_m and alpha_f differ. I think this svFSI code is using the Jansen 2000 definition of alpha_m and alpha_f.
+            Yg(s:e,a) = Yo(s:e,a)*coef(3) + Yn(s:e,a)*coef(4) ! JP: from MOD.f in the eqType type, I think 'Y' stands for velocity; this eqn comes from eqn 11 in the Chung 1993 paper. ! JP 2021_04_14: this line matches eqn 90 in Bazilevs 2007
+            Dg(s:e,a) = Do(s:e,a)*coef(3) + Dn(s:e,a)*coef(4) ! JP: from MOD.f in the eqType type, I think 'D' stands for displacement; this eqn comes from eqn 10 in the Chung 1993 paper.
          END DO
       END DO
 
@@ -171,7 +177,7 @@
       coef(3) = 1._RKIND / eq(cEq)%am
       coef(4) = eq(cEq)%af*coef(1)*coef(3)
 
-      IF (sstEq) THEN
+      IF (sstEq) THEN ! JP 2021_04_14: sstEq is a boolean than says "Whether velocity-pressure based structural dynamics solver is used" according to MOD.f; this variable is set in READFILES.f
 !        ustruct, FSI (ustruct)
          IF (eq(cEq)%phys .EQ. phys_ustruct .OR.
      2       eq(cEq)%phys .EQ. phys_FSI) THEN
@@ -191,8 +197,12 @@
          END IF
       ELSE
          DO a=1, tnNo
-            An(s:e,a) = An(s:e,a) - R(:,a)
-            Yn(s:e,a) = Yn(s:e,a) - R(:,a)*coef(1)
+            ! JP 2021_04_14: '-R(:,a)' represents the update/correction for the acceleration, where this correction/update was obtained in the newton solver by solving "K*delta = -R" (or in other words, "K*delta = R" where after we solve for delta, we must apply the minus sign in the correction step in gen alpha), where K represents the tangent matrix and R represents the residual and delta represents the update/correction in the Newton solver in gen alpha ! actually, is R(:,a) the acceleration update (the 'delta' in the above eqn) or is it the residual?? for now, I will assume that it is the 'delta' term, since it does not say anywhere in this entire svFSI if R is the residual or the delta... I think from SOLVE.f, in the call to NSSOLVER or GMRESS, R is the residual initially but then after NSSOLVER or GMRESS solve the linear system with that residual R, as a last step they overwrite R with the delta update / correction instead (maybe this is done to save memory??), but I am not sure if this is actually the case or not... I need to ask someone, maybe weiguang, for confirmation
+
+            An(s:e,a) = An(s:e,a) - R(:,a) ! JP 2021_04_14: this line matches eqn 94 in Bazilevs 2007, assuming that "R(:,a)" is the update/correction, as mentioned in the above comment...
+
+            Yn(s:e,a) = Yn(s:e,a) - R(:,a)*coef(1) ! JP 2021_04_14: this line matches eqn 95 in Bazilevs 2007, assuming that "R(:,a)" is the update/correction, as mentioned in the above comment...
+
             Dn(s:e,a) = Dn(s:e,a) - R(:,a)*coef(2)
          END DO
       END IF
@@ -386,4 +396,3 @@
       RETURN
       END SUBROUTINE PICETH
 !====================================================================
-

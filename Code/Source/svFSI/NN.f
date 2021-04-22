@@ -1361,7 +1361,7 @@ c        N(8) = lx*my*0.5_RKIND
             xXi(:,2) = xXi(:,2) + x(:,a)*Nxi(2,a)
          END DO
 
-         Jac = xXi(1,1)*xXi(2,2) - xXi(1,2)*xXi(2,1)
+         Jac = xXi(1,1)*xXi(2,2) - xXi(1,2)*xXi(2,1) ! JP 2021_04_14: is "Jac" the jacobian of the parent element (recall from ME335A that the jacobian of the parent element is = the area of the parent element in 2D or something like that)??
 
          xiX(1,1) =  xXi(2,2)/Jac
          xiX(1,2) = -xXi(1,2)/Jac
@@ -1745,4 +1745,3 @@ c        N(8) = lx*my*0.5_RKIND
       RETURN
       END SUBROUTINE GNNB
 !####################################################################
-

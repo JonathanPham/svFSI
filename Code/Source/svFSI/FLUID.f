@@ -454,7 +454,7 @@
       up(1) = -tauM*(rho*rV(1) + px(1))
       up(2) = -tauM*(rho*rV(2) + px(2))
 
-      tauB = up(1)*up(1)*Kxi(1,1) + up(2)*up(1)*Kxi(2,1)
+      tauB = up(1)*up(1)*Kxi(1,1) + up(2)*up(1)*Kxi(2,1) ! JP 2021_04_22: I think "tauB" stands for tau_bar, where tau_bar is defined in eqn 2.8 in mahdi's thesis 
      2     + up(1)*up(2)*Kxi(1,2) + up(2)*up(2)*Kxi(2,2)
       IF (ISZERO(tauB)) tauB = eps
       tauB = rho/SQRT(tauB)
@@ -506,7 +506,7 @@
 
             T3 = rho*tauM*(amd*N(b) + uNx(b))
 
-!           dM/dU
+!           dM/dU ! JP 2021_04_22: I think "M" stands for Momentum and "U" stands for velocity
             lK(1,a,b) = lK(1,a,b) + wl*((mu + tauC)*rM(1,1) + T1
      2         + mu_x*es_x(1,a)*es_x(1,b))
             lK(2,a,b) = lK(2,a,b) + wl*(mu*rM(2,1) + tauC*rM(1,2)
@@ -525,7 +525,7 @@
             lK(7,a,b) = lK(7,a,b) + wl*(N(a)*Nx(1,b) + Nx(1,a)*T3)
             lK(8,a,b) = lK(8,a,b) + wl*(N(a)*Nx(2,b) + Nx(2,a)*T3)
 
-!           dC/dP
+!           dC/dP ! JP 2021_04_22: I think "C" stands for Continuity and "P" stands for Pressure
             lK(9,a,b) = lK(9,a,b) + wl*(tauM*NxNx)
          END DO
       END DO

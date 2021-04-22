@@ -275,7 +275,7 @@
       DO a=1, d
          rowN = eqN(a)
          IF (rowN .EQ. 0) CYCLE
-         R(:,rowN) = R(:,rowN) + lR(:,a)
+         R(:,rowN) = R(:,rowN) + lR(:,a) ! JP 2021_04_08: according to weiguang, R is the RHS assembled residual vector (used in the newton solver in the generalized alpha method)
          DO b=1, d
             colN = eqN(b)
             IF (colN .EQ. 0) CYCLE
@@ -290,7 +290,7 @@
                END IF
                ptr = (right + left)/2
             END DO
-            Val(:,ptr) = Val(:,ptr) + lK(:,a,b)
+            Val(:,ptr) = Val(:,ptr) + lK(:,a,b) ! JP 2021_04_08: according to weiguang, Val is a sparse matrix storage scheme for the assembled LHS matrix (the tangent matrix used in the newton solver in the generalized alpha method)
          END DO
       END DO
 

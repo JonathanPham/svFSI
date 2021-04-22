@@ -80,6 +80,7 @@
 
       IF (lEq%assmTLS) THEN
          lEq%FSILS%RI%suc = .FALSE.
+         ! JP 2021_04_14: tls is of type "tlsType" in MOD.f, in line "TYPE(tlsType), ALLOCATABLE :: tls"
          CALL TRILINOS_SOLVE(tls%R, tls%W, lEq%FSILS%RI%fNorm,
      2      lEq%FSILS%RI%iNorm, lEq%FSILS%RI%itr, lEq%FSILS%RI%callD,
      3      lEq%FSILS%RI%dB, lEq%FSILS%RI%suc, lEq%ls%LS_type,
@@ -96,7 +97,7 @@
       ELSE
 #endif
          CALL FSILS_SOLVE(lhs, lEq%FSILS, dof, R, Val,
-     2      lEq%ls%PREC_Type, incL=incL, res=res)
+     2      lEq%ls%PREC_Type, incL=incL, res=res) ! JP 2021_04_14: "lhs" is a "FSILS data structure to produce LHS sparse matrix" in MOD.f
 #ifdef WITH_TRILINOS
       END IF
 
