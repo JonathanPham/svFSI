@@ -49,6 +49,7 @@
 !--------------------------------------------------------------------
 
       SUBROUTINE FSILS_SOLVE (lhs, ls, dof, Ri, Val, prec, incL, res)
+      ! JP 2021_04_14: is Ri the update/correction and is res the residual??? maybe look in the assembly function to see if it updates "res" with the local element contributions, if it does, then that def means that res is the residual and thus, Ri (or R) would be the update/correction (but that would mean that we are solving K*delta = res (notice the lack of the minus sign here!; but i think the minus gets applied to the delta (or update, R) in PICC line 193 where there is a minus sign in front of the R term (the update term) )  )
       INCLUDE "FSILS_STD.h"
       TYPE(FSILS_lhsType), INTENT(INOUT) :: lhs
       TYPE(FSILS_lsType), INTENT(INOUT) :: ls
