@@ -75,7 +75,7 @@
             xl(:,a)  = x(:,Ac)
             al(:,a)  = Ag(:,Ac)
             yl(:,a)  = Yg(:,Ac)
-            bfl(:,a) = Bf(:,Ac)
+            bfl(:,a) = Bf(:,Ac) ! JP 2021_05_04: "Bf" stands for "Body force" from MOD.f
          END DO
 
 !        Gauss integration
@@ -352,6 +352,9 @@
       END SUBROUTINE FLUID3D
 !--------------------------------------------------------------------
       SUBROUTINE FLUID2D(eNoN, w, N, Nx, al, yl, bfl, Kxi, lR, lK)
+        ! JP 2021_05_04: bfl stands for body force local (the local element body source)
+        ! JP 2021_05_04: I think Kxi represents the greek letter, "xi", which Mahdi uses in his thesis (eqn 2.8, pg 15) to compute tau_M, tau_bar, and tau_C parameters. where xi is a matrix of size nsd x nsd, which is exactly what is coded below: "Kxi(2,2)", where here we are in 2D (FLUID2D), so nsd = 2.
+        ! JP 2021_05_04: I think eNoN is "Number of nodes (control points) in a single element" from MOD.f (under section, TYPE mshType)
       USE COMMOD
       USE ALLFUN
       IMPLICIT NONE
@@ -367,11 +370,11 @@
      3   ua(2), ux(2,2), es(2,2), rV(2), rM(2,2), uNx(eNoN), upNx(eNoN),
      4   uaNx(eNoN), NxNx, gam, mu_s, mu_x, es_x(2,eNoN), T1, T2, T3
 
-      ctM  = 1._RKIND
-      ctC  = 36._RKIND
+      ctM  = 1._RKIND ! JP 2021_05_04: ctM represents c1 in Madhi's thesis, eqn 2.8 pg 15
+      ctC  = 36._RKIND ! JP 2021_05_04: ctC represents c2 in Madhi's thesis, eqn 2.8 pg 15
 
       rho  = eq(cEq)%dmn(cDmn)%prop(fluid_density)
-      f(1) = eq(cEq)%dmn(cDmn)%prop(f_x)
+      f(1) = eq(cEq)%dmn(cDmn)%prop(f_x) ! JP 2021_05_04: what is the difference between "f" and bfl? Are they both body forces?
       f(2) = eq(cEq)%dmn(cDmn)%prop(f_y)
 
       T1   = eq(cEq)%af * eq(cEq)%gam * dt
@@ -381,45 +384,46 @@
 
 !     Indices are not selected based on the equation only
 !     because fluid equation always come first
-      p  = 0._RKIND
-      u  = 0._RKIND
+      ! JP 2021_05_04: this section computes the pressure and the velocity, using the shape functions. E.g. recall that the pressure = sum (over the nodes in the local element) of the pressure degree-of-freedom times the shape function. The pressure and velocity here are the values at the t_(n + alpha_f) time step
+      p  = 0._RKIND ! JP 2021_05_04: p = pressure?
+      u  = 0._RKIND ! JP 2021_05_04: u = velocity?
       ud = -f
-      px = 0._RKIND
-      ux = 0._RKIND
+      px = 0._RKIND ! JP 2021_05_04: px = spatial derivative of pressure?
+      ux = 0._RKIND ! JP 2021_05_04: ux = spatial derivative of velocity?
       DO a=1, eNoN
-         p  = p + N(a)*yl(3,a)
+         p  = p + N(a)*yl(3,a) ! JP 2021_05_04: note that yl is an array of shape (tDof, eNoN), where tDof = "Total number of degrees of freedom per node" (from MOD.f). So that means that the pressure soltn is stored in the 3rd row of yl and the x and y velocities are stored in the 1st and 2nd rows of yl. and yl is obtained from "yl(:,a)  = Yg(:,Ac)", where Yg contains the value of the all soltns in the model evaluated at the t_(n + alpha_f) time step (as discussed in MAIN.f and PIC.f)
 
-         ud(1) = ud(1) + N(a)*(al(1,a)-bfl(1,a))
-         ud(2) = ud(2) + N(a)*(al(2,a)-bfl(2,a))
+         ud(1) = ud(1) + N(a)*(al(1,a)-bfl(1,a)) ! JP 2021_05_04: al(1,a) is the time derivative of x-velocity
+         ud(2) = ud(2) + N(a)*(al(2,a)-bfl(2,a)) ! JP 2021_05_04: al(2,a) is the time derivative of y-velocity
 
-         px(1) = px(1) + Nx(1,a)*yl(3,a)
+         px(1) = px(1) + Nx(1,a)*yl(3,a) ! JP 2021_05_05: this line computes the pressure gradient
          px(2) = px(2) + Nx(2,a)*yl(3,a)
 
          u(1) = u(1) + N(a)*yl(1,a)
          u(2) = u(2) + N(a)*yl(2,a)
 
-         ux(1,1) = ux(1,1) + Nx(1,a)*yl(1,a)
+         ux(1,1) = ux(1,1) + Nx(1,a)*yl(1,a) ! JP 2021_05_04: ux is an array with shape (nsd, nsd) (here nsd = 2, for 2D problem). ux(i, j) = the ith derivative of the jth component of u. So for example, ux(1, 2) represents the x-derivative of the y-velocity.
          ux(2,1) = ux(2,1) + Nx(2,a)*yl(1,a)
          ux(1,2) = ux(1,2) + Nx(1,a)*yl(2,a)
          ux(2,2) = ux(2,2) + Nx(2,a)*yl(2,a)
       END DO
-      divU = ux(1,1) + ux(2,2)
+      divU = ux(1,1) + ux(2,2) ! JP 2021_05_04: divU = divergence of velocity, evaluated at the t_(n + alpha_f) time step
 
-      IF (mvMsh) THEN
+      IF (mvMsh) THEN ! JP 2021_04_21: according to MOD.f, mvMsh is a boolean that indicates "Whether mesh is moving"; I think this parameter is used only in FSI cases (see READFILES.f with the line "CASE ('FSI')", where this section sets mvMsh to be true (mvMsh has a value of false by default))
          DO a=1, eNoN
             u(1) = u(1) - N(a)*yl(4,a)
             u(2) = u(2) - N(a)*yl(5,a)
          END DO
       END IF
 
-!     Strain rate tensor 2*e_ij := (u_ij + u_ji)
+!     Strain rate tensor 2*e_ij := (u_ij + u_ji) ! JP 2021_05_04: I think this section computes the 2 times the symmetric gradient of velocity, where recall that the symmetric gradient of velocity is = 0.5 * (grad(u) + (grad(u))^T)
       es(1,1) = ux(1,1) + ux(1,1)
       es(2,1) = ux(2,1) + ux(1,2)
       es(1,2) = es(2,1)
       es(2,2) = ux(2,2) + ux(2,2)
 
       DO a=1, eNoN
-        es_x(1,a) = es(1,1)*Nx(1,a) + es(2,1)*Nx(2,a)
+        es_x(1,a) = es(1,1)*Nx(1,a) + es(2,1)*Nx(2,a) ! the spatial derivatives of the "Strain rate tensor" or the divergence of the "Strain rate tensor"???
         es_x(2,a) = es(1,2)*Nx(1,a) + es(2,2)*Nx(2,a)
       END DO
 
@@ -445,19 +449,24 @@
      2   + Kxi(1,2)*Kxi(1,2) + Kxi(2,2)*Kxi(2,2)
       kS = ctC * kS * (mu/rho)**2._RKIND
 
-      tauM = 1._RKIND / (rho * SQRT( kT + kU + kS ))
-      tauC = 1._RKIND / (tauM * (Kxi(1,1) + Kxi(2,2)))
+      tauM = 1._RKIND / (rho * SQRT( kT + kU + kS )) ! JP 2021_05_04: the kT term represents the first term ( (2 * c1 / dt ) ** 2.0 ) in the tau_M eqn in eqn 2.8 (pg 15) of Mahdi's thesis; the kU term represents the 2nd term (u dotted with xi times u) in that same eqn; the kS represents the 3rd term (c2 * (mu / rho) ** 2.0 * inner product of xi and xi) in that same equation
+      tauC = 1._RKIND / (tauM * (Kxi(1,1) + Kxi(2,2))) ! JP 2021_05_04: this line matches the eqn for tau_C in eqn 2.8 (pg 15) of Mahdi's thesis; where "(Kxi(1,1) + Kxi(2,2))" represents the trace of the matrix, xi
 
       rV(1) = ud(1) + u(1)*ux(1,1) + u(2)*ux(2,1)
+        ! JP 2021_05_04: I think "u(1)*ux(1,1) + u(2)*ux(2,1)" is the dot product between the velocity and the gradient of the velocity
+        ! JP 2021_05_04: I think rV is the residual of the PDE. Note that here, rV contains 1) the source term/body force (inside ud) 2) the time derivative of velocity (inside ud), 3) the convective term, but 4) is missing the diffusion term
+                ! JP 2021_05_04: I think the diffusion term is not present because is Mahdi is using linear velocity and pressure interpolations (linear shape functions), so that means the diffusion term is zero (b/c the 2nd derivative of linear functions are zero)
       rV(2) = ud(2) + u(1)*ux(1,2) + u(2)*ux(2,2)
 
-      up(1) = -tauM*(rho*rV(1) + px(1))
+      up(1) = -tauM*(rho*rV(1) + px(1)) ! JP 2021_05_05: this line represents the negative tau_M times the PDE residual; issue - matches eqn 2.8 pg 15 in Mahdi's thesis for up (with the extra multiplication of the density, rho)
       up(2) = -tauM*(rho*rV(2) + px(2))
 
-      tauB = up(1)*up(1)*Kxi(1,1) + up(2)*up(1)*Kxi(2,1) ! JP 2021_04_22: I think "tauB" stands for tau_bar, where tau_bar is defined in eqn 2.8 in mahdi's thesis 
+
+      ! JP 2021_04_22: I think "tauB" stands for tau_bar, where tau_bar is defined in eqn 2.8 in mahdi's thesis
+      tauB = up(1)*up(1)*Kxi(1,1) + up(2)*up(1)*Kxi(2,1)
      2     + up(1)*up(2)*Kxi(1,2) + up(2)*up(2)*Kxi(2,2)
       IF (ISZERO(tauB)) tauB = eps
-      tauB = rho/SQRT(tauB)
+      tauB = rho/SQRT(tauB) ! JP 2021_05_05: this line exactly matches eqn 2.8 pg 15 in Mahdi's thesis (for tau_bar)
 
       ua(1) = u(1) + up(1)
       ua(2) = u(2) + up(2)
@@ -466,15 +475,17 @@
       rV(1) = tauB*(up(1)*ux(1,1) + up(2)*ux(2,1))
       rV(2) = tauB*(up(1)*ux(1,2) + up(2)*ux(2,2))
 
-      rM(1,1) = mu*es(1,1) - rho*up(1)*ua(1) + rV(1)*up(1) - pa
+      rM(1,1) = mu*es(1,1) - rho*up(1)*ua(1) + rV(1)*up(1) - pa ! JP 2021_05_05: issue - I think the term "rho*up(1)*ua(1)" should not be multiplied by ua(1) but by u(1) instead and also i think there is an extra unneeded multiplication by rho in this same term
+                 ! JP 2021_05_05: from my GoodNotes (written in light red), "mu*es(1,1)" and "- pa" account for terms 3 and 7; "rho*up(1)*ua(1)" accounts for term 6 (but with the error/issue mentioned above); "rV(1)*up(1)" accounts for term 9
       rM(2,1) = mu*es(2,1) - rho*up(1)*ua(2) + rV(1)*up(2)
 
       rM(1,2) = mu*es(1,2) - rho*up(2)*ua(1) + rV(2)*up(1)
       rM(2,2) = mu*es(2,2) - rho*up(2)*ua(2) + rV(2)*up(2) - pa
 
-      rV(1) = ud(1) + ua(1)*ux(1,1) + ua(2)*ux(2,1)
+      rV(1) = ud(1) + ua(1)*ux(1,1) + ua(2)*ux(2,1) ! JP 2021_05_05: from my GoodNotes (written in light red), "ud(1)" accounts for terms 1, 4; "ua(1)*ux(1,1) + ua(2)*ux(2,1)" accounts for terms 2, 8
       rV(2) = ud(2) + ua(1)*ux(1,2) + ua(2)*ux(2,2)
 
+      ! JP 2021_05_04: I think this section computes the local element residual vector
       DO a=1, eNoN
          uNx(a)  = u(1)*Nx(1,a)  + u(2)*Nx(2,a)
          upNx(a) = up(1)*Nx(1,a) + up(2)*Nx(2,a)
@@ -482,13 +493,18 @@
 
          lR(1,a) = lR(1,a) + wr*N(a)*rV(1) + w*(Nx(1,a)*rM(1,1)
      2      + Nx(2,a)*rM(2,1))
+                ! JP 2021_05_05: issue - I think the "wr*N(a)*rV(1)" term looks good, except that I think it is multiplying the up term by an extra unneeded rho term (where that rho term lives inside the "wr")
+                ! JP 2021_05_05: The "wr*N(a)*rV(1)" term includes terms 1, 2, 4, 8 from my GoodNotes (written in light red)
+                ! JP 2021_05_05: The "w*(Nx(1,a)*rM(1,1) + Nx(2,a)*rM(2,1))" term includes terms 3, 6, 7, 9 from my GoodNotes (written in light red)
 
          lR(2,a) = lR(2,a) + wr*N(a)*rV(2) + w*(Nx(1,a)*rM(1,2)
      2      + Nx(2,a)*rM(2,2))
 
-         lR(3,a) = lR(3,a) + w*(N(a)*divU - upNx(a))
+         lR(3,a) = lR(3,a) + w*(N(a)*divU - upNx(a)) ! JP 2021_05_05: issue - this line matches eqn 2.10 pg 16 of Mahdi's thesis, for the continuity residual (also matches my eqn for the continuity residual in my GoodNotes), but I think the upNx term here is missing a division by density (rho).
+                ! JP 2021_05_05: from my GoodNotes (written in light red), "N(a)*divU" accounts for term 10; "upNx(a)" accounts for term 11 
       END DO
 
+      ! JP 2021_05_04: I think this section computes the local element tangent matrix
       DO a=1, eNoN
          DO b=1, eNoN
             rM(1,1) = Nx(1,a)*Nx(1,b)
@@ -591,7 +607,7 @@
       RETURN
       END SUBROUTINE BFLUID
 !####################################################################
-      SUBROUTINE BWFLUID3D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK)
+      SUBROUTINE BWFLUID3D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK) ! JP 2021_05_04: I think the "W" in "BWFLUID3D" stands for "weak" and the "B" stands for "boudary", so I think this function is used to apply the BCs (in a weakly enforced sense)
       USE COMMOD
       IMPLICIT NONE
       INTEGER(KIND=IKIND), INTENT(IN) :: eNoN
@@ -766,7 +782,7 @@ c     2         nu*(N(a)*Nx(3,b)*nV(2) + Nx(3,a)*N(b)*nV(2))
       RETURN
       END SUBROUTINE BWFLUID3D
 !--------------------------------------------------------------------
-      SUBROUTINE BWFLUID2D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK)
+      SUBROUTINE BWFLUID2D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK) ! JP 2021_05_04: I think the "W" in "BWFLUID3D" stands for "weak" and the "B" stands for "boudary", so I think this function is used to apply the BCs (in a weakly enforced sense)
       USE COMMOD
       IMPLICIT NONE
       INTEGER(KIND=IKIND), INTENT(IN) :: eNoN

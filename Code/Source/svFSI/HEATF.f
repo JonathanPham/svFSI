@@ -244,7 +244,7 @@
          Tx(2) = Tx(2) + Nx(2,a)*yl(i,a)
       END DO
 
-      IF (mvMsh) THEN ! JP 2021_04_21: according to MOD.f, mvMsh is a boolean that indiciates "Whether mesh is moving"; I think this parameter is used only in FSI cases (see READFILES.f with the line "CASE ('FSI')", where this section sets mvMsh to be true (mvMsh has a value of false by default))
+      IF (mvMsh) THEN ! JP 2021_04_21: according to MOD.f, mvMsh is a boolean that indicates "Whether mesh is moving"; I think this parameter is used only in FSI cases (see READFILES.f with the line "CASE ('FSI')", where this section sets mvMsh to be true (mvMsh has a value of false by default))
          DO a=1, eNoN
             u(1) = u(1) - N(a)*yl(5,a)
             u(2) = u(2) - N(a)*yl(6,a)
