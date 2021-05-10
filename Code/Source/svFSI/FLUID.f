@@ -501,7 +501,7 @@
      2      + Nx(2,a)*rM(2,2))
 
          lR(3,a) = lR(3,a) + w*(N(a)*divU - upNx(a)) ! JP 2021_05_05: issue - this line matches eqn 2.10 pg 16 of Mahdi's thesis, for the continuity residual (also matches my eqn for the continuity residual in my GoodNotes), but I think the upNx term here is missing a division by density (rho).
-                ! JP 2021_05_05: from my GoodNotes (written in light red), "N(a)*divU" accounts for term 10; "upNx(a)" accounts for term 11 
+                ! JP 2021_05_05: from my GoodNotes (written in light red), "N(a)*divU" accounts for term 10; "upNx(a)" accounts for term 11
       END DO
 
       ! JP 2021_05_04: I think this section computes the local element tangent matrix
@@ -511,12 +511,16 @@
             rM(2,1) = Nx(2,a)*Nx(1,b)
             rM(1,2) = Nx(1,a)*Nx(2,b)
             rM(2,2) = Nx(2,a)*Nx(2,b)
+                ! JP 2021_05_10: Here, let's match terms in "rM" with red-font terms in GoodNotes: "rM" = term 5 + 7
 
             NxNx = Nx(1,a)*Nx(1,b) + Nx(2,a)*Nx(2,b)
 
             T1 = mu*NxNx + tauB*upNx(a)*upNx(b)
      2         + rho*( N(a)*(amd*N(b) + uaNx(b))
      3         + rho*tauM*uaNx(a)*(uNx(b) + amd*N(b)) )
+                    ! JP 2021_05_10: T1 contains all the terms with the kronecker delta in my GoodNotes
+                        ! JP 2021_05_10: Here, let's match terms in "T1" with red-font terms in GoodNotes: "mu*NxNx" = term 4; "tauB*upNx(a)*upNx(b)" = term 9; "rho*( N(a)*(amd*N(b)" = term 1; "rho*( N(a)*(" and "uaNx(b))" both = term 3 + 8; "rho*tauM*uaNx(a)*" and "amd*N(b))" both = term 2; "rho*tauM*uaNx(a)*(uNx(b)" = term 6
+                            ! JP 2021_05_10: issue - note that in the "rho*tauM*uaNx(a)" term, there is an extra "up" term in this svFSI code, even though that extra "up" is not present in Madhi's eqn 2.18 for K or my GoodNotes)
 
             T2 = rho*tauM*uaNx(a)
 
@@ -524,25 +528,27 @@
 
 !           dM/dU ! JP 2021_04_22: I think "M" stands for Momentum and "U" stands for velocity
             lK(1,a,b) = lK(1,a,b) + wl*((mu + tauC)*rM(1,1) + T1
-     2         + mu_x*es_x(1,a)*es_x(1,b))
+     2         + mu_x*es_x(1,a)*es_x(1,b)) ! JP 2021_05_10: this line corresponds to i = 1, j = 1 (using 1-based indexing) in my GoodNotes
+                        ! JP 2021_05_10: matches eqn 2.18 pg 18 (eqn for K^{ab}) in Mahdi's thesis, except for one difference, as mentioned in the "issue" above for the "rho*tauM*uaNx(a)" term
+                        ! JP 2021_05_10: I think the "mu_x" term is for non-newtonian viscosity or some other kind of fancy viscosity that I don't need for the simple NS eqns that I wrote in my GoodNotes or the ones that Mahdi has in his thesis
             lK(2,a,b) = lK(2,a,b) + wl*(mu*rM(2,1) + tauC*rM(1,2)
-     2         + mu_x*es_x(1,a)*es_x(2,b))
+     2         + mu_x*es_x(1,a)*es_x(2,b)) ! JP 2021_05_10: this line corresponds to i = 1, j = 2 (using 1-based indexing) in my GoodNotes
 
             lK(4,a,b) = lK(4,a,b) + wl*(mu*rM(1,2) + tauC*rM(2,1)
-     2         + mu_x*es_x(2,a)*es_x(1,b))
+     2         + mu_x*es_x(2,a)*es_x(1,b)) ! JP 2021_05_10: this line corresponds to i = 2, j = 1 (using 1-based indexing) in my GoodNotes
             lK(5,a,b) = lK(5,a,b) + wl*((mu + tauC)*rM(2,2) + T1
-     2         + mu_x*es_x(2,a)*es_x(2,b))
+     2         + mu_x*es_x(2,a)*es_x(2,b)) ! JP 2021_05_10: this line corresponds to i = 2, j = 2 (using 1-based indexing) in my GoodNotes
 
 !           dM/dP
-            lK(3,a,b) = lK(3,a,b) - wl*(Nx(1,a)*N(b) - Nx(1,b)*T2)
+            lK(3,a,b) = lK(3,a,b) - wl*(Nx(1,a)*N(b) - Nx(1,b)*T2) ! JP 2021_05_10: issue - matches eqn 2.18 pg 18 (eqn for G^{ab}) in Mahdi's thesis, except for one difference. In "T2", there is an extra "up" term in this svFSI code, even though that extra "up" is not present in Madhi's eqn 2.18 for G.
             lK(6,a,b) = lK(6,a,b) - wl*(Nx(2,a)*N(b) - Nx(2,b)*T2)
 
-!           dC/dU
-            lK(7,a,b) = lK(7,a,b) + wl*(N(a)*Nx(1,b) + Nx(1,a)*T3)
+!           dC/dU ! JP 2021_04_22: I think "C" stands for Continuity and "P" stands for Pressure
+            lK(7,a,b) = lK(7,a,b) + wl*(N(a)*Nx(1,b) + Nx(1,a)*T3) ! JP 2021_05_10: matches eqn 2.18 pg 18 (eqn for D^{ab}) in Mahdi's thesis
             lK(8,a,b) = lK(8,a,b) + wl*(N(a)*Nx(2,b) + Nx(2,a)*T3)
 
-!           dC/dP ! JP 2021_04_22: I think "C" stands for Continuity and "P" stands for Pressure
-            lK(9,a,b) = lK(9,a,b) + wl*(tauM*NxNx)
+!           dC/dP
+            lK(9,a,b) = lK(9,a,b) + wl*(tauM*NxNx) ! JP 2021_05_10: matches eqn 2.18 pg 18 (eqn for L^{ab}) in Mahdi's thesis
          END DO
       END DO
 
