@@ -241,6 +241,8 @@
 
       DO a=1, eNoN
          lR(1,a) = lR(1,a) + w*N(a)*h ! JP: is this computing the neumann BC here?? yes, i think so because BHEATS is called from EQASSEM.f under the section with comment "Construct Neumann BCs"
+                ! JP 2021_06_03: issue: I think there is an error here. I think the "h" (the Neumann BC value) should be multiplied by a negative sign (or it should be subtracted from lR instead of added to lR), b/c according to my GoodNotes for the Transient Heat Equation, we have to bring the (known) Neumann BC over to the LHS which requires us to subtract it.
+                    ! JP 2021_06_03: other the the above issue, this line "lR(1,a) = lR(1,a) + w*N(a)*h" makes sense to me and agrees with my FEM GoodNotes notes for the Transient Heat Equation
       END DO
 
       RETURN

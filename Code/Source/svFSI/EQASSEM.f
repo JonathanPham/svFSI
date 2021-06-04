@@ -122,8 +122,8 @@
 !        Updating the shape functions, if neccessary
          IF (lFa%eType .EQ. eType_NRB) CALL NRBNNXB(msh(iM), lFa, e)
 
-         DO g=1, lFa%nG
-            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV)
+         DO g=1, lFa%nG ! JP 2021_06_03: nG = number of Gauss points (from MOD.f)
+            CALL GNNB(lFa, e, g, nsd-1, eNoN, lFa%Nx(:,:,g), nV) ! JP 2021_06_03: nV is the normal vector of element "e" and Gauss point "g" of face "lFa" (from NN.f)
             Jac = SQRT(NORM(nV))
             nV  = nV/Jac
             w   = lFa%w(g)*Jac

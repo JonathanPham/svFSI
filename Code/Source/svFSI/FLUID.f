@@ -586,17 +586,17 @@
       hc  = h*nV + udn*u
 
 !     Here the loop is started for constructing left and right hand side
-      IF (nsd .EQ. 2) THEN
+      IF (nsd .EQ. 2) THEN ! JP 2021_06_03: this section is for 2D problems
          DO a=1, eNoN
-            lR(1,a) = lR(1,a) - w*N(a)*hc(1)
+            lR(1,a) = lR(1,a) - w*N(a)*hc(1) ! JP 2021_06_03: this line agrees with my FEM GoodNotes residual equation for the NS eqns (but without the extra backflow stabilization, udn)
             lR(2,a) = lR(2,a) - w*N(a)*hc(2)
             DO b=1, eNoN
                T1        = wl*N(a)*N(b)*udn
-               lK(1,a,b) = lK(1,a,b) - T1
+               lK(1,a,b) = lK(1,a,b) - T1 ! JP 2021_06_03: observe that when we update the local tangent matrix in this line, we dont use the Neumann BC value "h"; instead we use udn, which is for backflow stabilization
                lK(5,a,b) = lK(5,a,b) - T1
             END DO
          END DO
-      ELSE
+      ELSE ! JP 2021_06_03: this section is for 3D problems
          DO a=1, eNoN
             lR(1,a) = lR(1,a) - w*N(a)*hc(1)
             lR(2,a) = lR(2,a) - w*N(a)*hc(2)
@@ -613,7 +613,7 @@
       RETURN
       END SUBROUTINE BFLUID
 !####################################################################
-      SUBROUTINE BWFLUID3D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK) ! JP 2021_05_04: I think the "W" in "BWFLUID3D" stands for "weak" and the "B" stands for "boudary", so I think this function is used to apply the BCs (in a weakly enforced sense)
+      SUBROUTINE BWFLUID3D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK) ! JP 2021_05_04: I think the "W" in "BWFLUID3D" stands for "weak" and the "B" stands for "boundary", so I think this function is used to apply the BCs (in a weakly enforced sense)
       USE COMMOD
       IMPLICIT NONE
       INTEGER(KIND=IKIND), INTENT(IN) :: eNoN
@@ -788,7 +788,7 @@ c     2         nu*(N(a)*Nx(3,b)*nV(2) + Nx(3,a)*N(b)*nV(2))
       RETURN
       END SUBROUTINE BWFLUID3D
 !--------------------------------------------------------------------
-      SUBROUTINE BWFLUID2D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK) ! JP 2021_05_04: I think the "W" in "BWFLUID3D" stands for "weak" and the "B" stands for "boudary", so I think this function is used to apply the BCs (in a weakly enforced sense)
+      SUBROUTINE BWFLUID2D(eNoN, w, N, Nx, yl, ub, nV, tauB, lR, lK) ! JP 2021_05_04: I think the "W" in "BWFLUID3D" stands for "weak" and the "B" stands for "boundary", so I think this function is used to apply the BCs (in a weakly enforced sense)
       USE COMMOD
       IMPLICIT NONE
       INTEGER(KIND=IKIND), INTENT(IN) :: eNoN

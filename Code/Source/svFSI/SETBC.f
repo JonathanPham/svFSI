@@ -34,6 +34,7 @@
 !     Here Dirichlet, Neumann, Traction and Coupled BCs are applied on
 !     the boundary faces.
 !
+!   ! JP 2021_06_03: what is the difference between Neumann and Traction BCs?
 !--------------------------------------------------------------------
 
       SUBROUTINE SETBCDIR(lA, lY, lD)  ! JP 2021_04_08: weiguang said that this functions sets the dirichlet BCs
@@ -236,9 +237,13 @@
       INTEGER(KIND=IKIND) iFa, iBc, iM
 
       DO iBc=1, eq(cEq)%nBc
-         iFa = eq(cEq)%bc(iBc)%iFa
-         iM  = eq(cEq)%bc(iBc)%iM
+         iFa = eq(cEq)%bc(iBc)%iFa ! JP 2021_06_03: iFa = "The face index that corresponds to this BC" from MOD.f
+         iM  = eq(cEq)%bc(iBc)%iM ! JP 2021_06_03: iM = "The mesh index that corresponds to this BC" from MOD.f
          IF (BTEST(eq(cEq)%bc(iBc)%bType,bType_Neu)) THEN
+                    ! JP 2021_06_03: bType = an integer that tells us what "boundary type" this boundary is (e.g. is it a Neumann boundary, etc.?) (bType defined in MOD.f);
+                    ! JP 2021_06_03: bType_Neu = Neumann type;
+                        ! JP 2021_06_03: thus, this line "IF (BTEST(eq(cEq)%bc(iBc)%bType,bType_Neu)) THEN" checks if the current boundary is a Neumann boundary
+                    ! JP 2021_06_03: BTEST function: https://gcc.gnu.org/onlinedocs/gfortran/BTEST.html
             CALL SETBCNEUL(eq(cEq)%bc(iBc), msh(iM)%fa(iFa), Yg, Dg)
          ELSE IF (BTEST(eq(cEq)%bc(iBc)%bType,bType_trac)) THEN
             CALL SETBCTRACL(eq(cEq)%bc(iBc), msh(iM)%fa(iFa))

@@ -86,7 +86,7 @@
 !     Outer loop for marching in time. When entring this loop, all old
 !     variables are completely set and satisfy BCs. ! JP 2021_04_14: I think this means that Ao, Yo, and Do are completely "correct" in the sense that we already solved for them and now we are looking for the soltn at the next time step (An, Yn, and Dn)
       IF (cTS .LE. nITS) dt = dt/10._RKIND
-      DO
+      DO ! JP 2021_06_03: I think this is a loop over the time steps
 !     Adjusting the time step size once initialization stage is over
          IF (cTS .EQ. nITS) THEN
             dt = dt*10._RKIND
@@ -94,7 +94,7 @@
          END IF
 !     Incrementing time step, hence cTS will be associated with new
 !     variables, i.e. An, Yn, and Dn
-         cTS    = cTS + 1
+         cTS    = cTS + 1 ! JP 2021_06_03: cTS = "current Time Step"??
          time   = time + dt
          cEq    = 1
          eq%itr = 0
@@ -139,6 +139,7 @@
             DO iM=1, nMsh
                CALL GLOBALEQASSEM(msh(iM), Ag, Yg, Dg) ! JP 2021_04_02: so msh is defined in MOD.f (in the line "TYPE(mshType), ALLOCATABLE :: msh(:)" under the section "DERIVED TYPE VARIABLES"), but where does msh actually get "allocated" (or "allocate"), meaning where is msh(iM) set or computed?
                ! JP 2021_04_02: I think msh is set / computed in the function CALCMESHPROPS in the line "CALL CALCMESHPROPS(nMsh, msh)", where the function CALCMESHPROPS is defined in READMSH.f
+               ! JP 2021_06_03: I think GLOBALEQASSEM assembles the global residual and tangent matrix
                dbg = "Mesh "//iM//" is assembled"
             END DO
 
@@ -273,7 +274,7 @@
          IF (dFlag) Do = Dn ! JP 2021_04_14: as mentioned in PIC.f, I think "dFlag = .TRUE." maybe means that the PDE of interest has a 2nd order derivative in time, such as the eqns for elastodynamics. As such, in this line, if dFlag = .FALSE., then the problem is only first-order in time (e.g. the fluid or heat eqns) and thus we dont need to update Do with Dn
          cplBC%xo = cplBC%xn
       END DO
-!     End of outer loop
+!     End of outer loop ! JP 2021_06_03: I think this is a loop over the time steps
 
       IF (resetSim) THEN
          CALL REMESHRESTART(timeP)
