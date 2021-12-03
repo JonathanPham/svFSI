@@ -906,12 +906,11 @@
       IMPLICIT NONE
       REAL(KIND=RKIND) CPUT
 
-!     year, month, day, rel. UTC, hr, min, sec, msec
-      INTEGER(KIND=IKIND) timeArray(8)
+      INTEGER(KIND=IKIND) ct, cr
 
-      CALL DATE_AND_TIME (VALUES=timeArray)
-      CPUT = timeArray(5)*3.6E+3_RKIND + timeArray(6)*60._RKIND +
-     2   timeArray(7)*1._RKIND + timeArray(8)*1.E-3_RKIND
+      CALL SYSTEM_CLOCK(COUNT=ct, COUNT_RATE=cr)
+
+      CPUT = REAL(ct,KIND=RKIND)/REAL(cr,KIND=RKIND)
 
       RETURN
       END FUNCTION CPUT
